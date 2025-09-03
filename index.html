@@ -1,181 +1,254 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-	<meta charset="UTF-8">
-	<title>amay 七夕节日快乐</title>
-	<style>
-		*{margin:0; padding:0;}
-		body{ background-color: #1E1E1E; 		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的心意</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff9bc9, #7a8cff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: #fff;
+        }
+        
+        .container {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        p {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .heart-btn {
+            background: #ff4d6d;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255, 77, 109, 0.4);
+        }
+        
+        .heart-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(255, 77, 109, 0.6);
+        }
+        
+        .hearts {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .heart {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ff4d6d' width='24px' height='24px'%3E%3Cpath d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E") no-repeat center center;
+            background-size: contain;
+            opacity: 0.7;
+        }
+        
+        .message {
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            color: #333;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1s forwards;
+        }
+        
+        .message h2 {
+            color: #ff4d6d;
+            margin-bottom: 15px;
+        }
+        
+        .music-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.7; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            p { font-size: 1.2rem; }
+            .container { padding: 10px; }
+        }
+    </style>
 </head>
 <body>
-
-	<canvas id="drawHeart"></canvas>
-
-	<script>
-		var hearts = [];
-		var canvas = document.getElementById('drawHeart');
-		var wW = window.innerWidth;
-		var wH = window.innerHeight;
-		// 创建画布
-		var ctx = canvas.getContext('2d');
-		// 创建图片对象
-		var heartImage = new Image();
-		heartImage.src = 'img/heart.svg';
-		var num = 100;
-
-		init();
-
-		window.addEventListener('resize', function(){
-			 wW = window.innerWidth;
-			 wH = window.innerHeight;
-		});
-		// 初始化画布大小
-		function init(){
-			canvas.width = wW;
-			canvas.height = wH;
-			for(var i = 0; i < num; i++){
-				hearts.push(new Heart(i%5));
-			}
-			requestAnimationFrame(render);
-		}
-
-		function getColor(){
-			var val = Math.random() * 10;
-			if(val > 0 && val <= 1){
-				return '#00f';
-			} else if(val > 1 && val <= 2){
-				return '#f00';
-			} else if(val > 2 && val <= 3){
-				return '#0f0';
-			} else if(val > 3 && val <= 4){
-				return '#368';
-			} else if(val > 4 && val <= 5){
-				return '#666';
-			} else if(val > 5 && val <= 6){
-				return '#333';
-			} else if(val > 6 && val <= 7){
-				return '#f50';
-			} else if(val > 7 && val <= 8){
-				return '#e96d5b';
-			} else if(val > 8 && val <= 9){
-				return '#5be9e9';
-			} else {
-				return '#d41d50';
-			}
-		}
-
-		function getText(){
-			var val = Math.random() * 10;
-			if(val > 1 && val <= 3){
-				return '爱你一辈子';
-			} else if(val > 3 && val <= 5){
-				return '谢谢你爱我';
-			} else if(val > 5 && val <= 8){
-				return 'Amay 节日快乐';
-			} else{
-				return 'I Love You';
-			}
-		}
-
-		function Heart(type){
-			this.type = type;
-			// 初始化生成范围
-			this.x = Math.random() * wW;
-			this.y = Math.random() * wH;
-
-			this.opacity = Math.random() * .5 + .5;
-
-			// 偏移量
-			this.vel = {
-				x: (Math.random() - .5) * 5,
-				y: (Math.random() - .5) * 5
-			}
-
-			this.initialW = wW * .5;
-			this.initialH = wH * .5;
-			// 缩放比例
-			this.targetScale = Math.random() * .15 + .02; // 最小0.02
-			this.scale = Math.random() * this.targetScale;
-
-			// 文字位置
-			this.fx = Math.random() * wW;
-			this.fy = Math.random() * wH;
-			this.fs = Math.random() * 10;
-			this.text = getText();
-
-			this.fvel = {
-				x: (Math.random() - .5) * 5,
-				y: (Math.random() - .5) * 5,
-				f: (Math.random() - .5) * 2
-			}
-		}
-
-		Heart.prototype.draw = function(){
-			ctx.save();
-			ctx.globalAlpha = this.opacity;
-			ctx.drawImage(heartImage, this.x, this.y, this.width, this.height);
-			ctx.scale(this.scale + 1, this.scale + 1);
-  			if(!this.type){
-  				// 设置文字属性
-				ctx.fillStyle = getColor();
-	  			ctx.font = 'italic ' + this.fs + 'px sans-serif';
-	  			// 填充字符串
-	  			ctx.fillText(this.text, this.fx, this.fy);
-  			}
-			ctx.restore();
-		}
-		Heart.prototype.update = function(){
-			this.x += this.vel.x;
-			this.y += this.vel.y;
-
-			if(this.x - this.width > wW || this.x + this.width < 0){
-				// 重新初始化位置
-				this.scale = 0;
-				this.x = Math.random() * wW;
-				this.y = Math.random() * wH;
-			}
-			if(this.y - this.height > wH || this.y + this.height < 0){
-				// 重新初始化位置
-				this.scale = 0;
-				this.x = Math.random() * wW;
-				this.y = Math.random() * wH;
-			}
-
-			// 放大
-			this.scale += (this.targetScale - this.scale) * .1;
-			this.height = this.scale * this.initialH;
-			this.width = this.height * 1.4;
-
-			// -----文字-----
-			this.fx += this.fvel.x;
-			this.fy += this.fvel.y;
-			this.fs += this.fvel.f;
-
-			if(this.fs > 50){
-				this.fs = 2;
-			}
-
-			if(this.fx - this.fs > wW || this.fx + this.fs < 0){
-				// 重新初始化位置
-				this.fx = Math.random() * wW;
-				this.fy = Math.random() * wH;
-			}
-			if(this.fy - this.fs > wH || this.fy + this.fs < 0){
-				// 重新初始化位置
-				this.fx = Math.random() * wW;
-				this.fy = Math.random() * wH;
-			}
-		}
-
-		function render(){
-			ctx.clearRect(0, 0, wW, wH);
-			for(var i = 0; i < hearts.length; i++){
-				hearts[i].draw();
-				hearts[i].update();
-			}
-			requestAnimationFrame(render);
-		}
-	</script>
+    <div class="hearts" id="hearts"></div>
+    
+    <div class="container">
+        <h1>💖 给我最爱的人 💖</h1>
+        <p>从遇见你的那一刻起，我的世界便充满了色彩</p>
+        <button class="heart-btn" id="showLoveBtn">点击查看我的心意</button>
+        
+        <div class="message" id="loveMessage">
+            <h2>Amay 的独白：</h2>
+            <p>这辈子能够遇见你，爱上你，我真的特别幸运，在我的生活里你就是那个独一无二的例外，你也是我最爱的那个人，我常常想未来的日子，不管有多难我都想和你一直一直走下去，因为有你在，我的生命才有意义。</p>
+            <p>骂我我也爱你，讨厌我也爱你，你不要了我也爱你，敷衍我我也爱你，你爱别人我也爱你，爱你心甘情愿，你把我的心偷走了，不管怎么样，我都爱你</p>
+            <p>爱是在你看不见的地方忠诚于你，在没你的地方以你为约束[爱心]</p>
+            <p>我的世界很小，装满了你，你的世界很大，这辈子遇见你，我已经很满足。</p>
+            <p style="text-align: right; margin-top: 20px;">—— 永远爱你的我</p>
+        </div>
+    </div>
+    
+    <div class="music-control" id="musicControl">🎵</div>
+    
+    <audio id="bgMusic" loop>
+        <source src="weidao.mp3" type="audio/mpeg">
+    </audio>
+    
+    <script>
+        // 创建飘落的心形
+        function createHearts() {
+            const heartsContainer = document.getElementById('hearts');
+            const heartCount = 30;
+            
+            for (let i = 0; i < heartCount; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart');
+                
+                // 随机位置和大小
+                const size = Math.random() * 20 + 10;
+                const left = Math.random() * 100;
+                
+                heart.style.width = `${size}px`;
+                heart.style.height = `${size}px`;
+                heart.style.left = `${left}%`;
+                heart.style.bottom = `-${size}px`;
+                
+                // 随机动画延迟和持续时间
+                const delay = Math.random() * 5;
+                const duration = Math.random() * 5 + 5;
+                
+                heart.style.animation = `float ${duration}s linear infinite`;
+                heart.style.animationDelay = `${delay}s`;
+                
+                heartsContainer.appendChild(heart);
+            }
+        }
+        
+        // 显示表白信息
+        document.getElementById('showLoveBtn').addEventListener('click', function() {
+            const message = document.getElementById('loveMessage');
+            message.style.display = 'block';
+            this.style.display = 'none';
+            
+            // 增加心形数量
+            createMoreHearts();
+        });
+        
+        // 增加更多心形
+        function createMoreHearts() {
+            const heartsContainer = document.getElementById('hearts');
+            const additionalHearts = 20;
+            
+            for (let i = 0; i < additionalHearts; i++) {
+                const heart = document.createElement('div');
+                heart.classList.add('heart');
+                
+                const size = Math.random() * 25 + 15;
+                const left = Math.random() * 100;
+                
+                heart.style.width = `${size}px`;
+                heart.style.height = `${size}px`;
+                heart.style.left = `${left}%`;
+                heart.style.bottom = `-${size}px`;
+                
+                const delay = Math.random() * 3;
+                const duration = Math.random() * 4 + 4;
+                
+                heart.style.animation = `float ${duration}s linear infinite`;
+                heart.style.animationDelay = `${delay}s`;
+                
+                heartsContainer.appendChild(heart);
+            }
+        }
+        
+        // 背景音乐控制
+        const musicControl = document.getElementById('musicControl');
+        const bgMusic = document.getElementById('bgMusic');
+        let isPlaying = false;
+        
+        musicControl.addEventListener('click', function() {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicControl.innerHTML = '🎵';
+            } else {
+                bgMusic.play();
+                musicControl.innerHTML = '🔊';
+            }
+            isPlaying = !isPlaying;
+        });
+        
+        // 初始化
+        window.addEventListener('load', function() {
+            createHearts();
+        });
+    </script>
 </body>
 </html>
