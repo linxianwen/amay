@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>浪漫短文分享平台</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -445,106 +448,34 @@
     </footer>
 
     <script>
-        // 数据库管理系统 - 永久存储实现
-        class PermanentPostDatabase {
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789012",
+            appId: "1:123456789012:web:abcdefghijklmnop"
+        };
+        
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Firebase 数据库管理系统
+        class FirebasePostDatabase {
             constructor() {
-                this.dbName = 'romanticPostsDB';
-                this.version = '2.0';
-                this.tableName = 'posts';
-                this.backupTableName = 'posts_backup';
+                this.collection = 'romanticPosts';
                 this.initDatabase();
             }
             
             // 初始化数据库
-            initDatabase() {
-                const dbInfo = {
-                    name: this.dbName,
-                    version: this.version,
-                    created: new Date().toISOString(),
-                    lastModified: new Date().toISOString(),
-                    lastBackup: null,
-                    totalOperations: 0
-                };
-                
-                if (!localStorage.getItem(`${this.dbName}_info`)) {
-                    localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
-                    localStorage.setItem(this.tableName, JSON.stringify([]));
-                    localStorage.setItem(this.backupTableName, JSON.stringify([]));
-                    console.log('数据库初始化完成 - 永久存储模式');
-                } else {
-                    // 检查并升级数据库版本
-                    this.upgradeDatabase();
-                }
-                
-                // 自动备份机制
-                this.setupAutoBackup();
-            }
-            
-            // 数据库升级
-            upgradeDatabase() {
+            async initDatabase() {
                 try {
-                    const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                    if (dbInfo.version !== this.version) {
-                        console.log(`数据库升级: ${dbInfo.version} -> ${this.version}`);
-                        dbInfo.version = this.version;
-                        dbInfo.lastModified = new Date().toISOString();
-                        if (!dbInfo.lastBackup) dbInfo.lastBackup = null;
-                        if (!dbInfo.totalOperations) dbInfo.totalOperations = 0;
-                        localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
-                        
-                        // 确保备份表存在
-                        if (!localStorage.getItem(this.backupTableName)) {
-                            localStorage.setItem(this.backupTableName, JSON.stringify([]));
-                        }
-                    }
+                    console.log('Firebase 数据库连接成功');
                 } catch (error) {
-                    console.error('数据库升级失败:', error);
+                    console.error('Firebase 数据库初始化失败:', error);
                 }
-            }
-            
-            // 设置自动备份
-            setupAutoBackup() {
-                // 每5分钟自动备份一次
-                setInterval(() => {
-                    this.createBackup();
-                }, 5 * 60 * 1000);
-                
-                // 页面关闭时备份
-                window.addEventListener('beforeunload', () => {
-                    this.createBackup();
-                });
-            }
-            
-            // 创建备份
-            createBackup() {
-                try {
-                    const posts = this.getAllPosts();
-                    if (posts.length > 0) {
-                        localStorage.setItem(this.backupTableName, JSON.stringify(posts));
-                        const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                        dbInfo.lastBackup = new Date().toISOString();
-                        localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
-                        console.log('自动备份完成:', new Date().toLocaleString());
-                    }
-                } catch (error) {
-                    console.error('备份失败:', error);
-                }
-            }
-            
-            // 恢复备份
-            restoreFromBackup() {
-                try {
-                    const backupPosts = JSON.parse(localStorage.getItem(this.backupTableName) || '[]');
-                    if (backupPosts.length > 0) {
-                        localStorage.setItem(this.tableName, JSON.stringify(backupPosts));
-                        this.updateDbInfo();
-                        console.log('从备份恢复成功');
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('恢复失败:', error);
-                }
-                return false;
             }
             
             // 生成唯一ID
@@ -552,495 +483,164 @@
                 return `post_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
             
-            // 增加操作计数
-            incrementOperations() {
+            // 添加文章到 Firebase
+            async insertPost(title, content, author = '匿名用户') {
                 try {
-                    const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                    dbInfo.totalOperations = (dbInfo.totalOperations || 0) + 1;
-                    localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
-                } catch (error) {
-                    console.error('更新操作计数失败:', error);
-                }
-            }
-            
-            // 添加文章 - 增强版
-            insertPost(title, content, author = '匿名用户') {
-                try {
-                    const posts = this.getAllPosts();
                     const newPost = {
                         id: this.generateId(),
                         title: title.trim(),
                         content: content.trim(),
                         author: author.trim(),
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
                         status: 'published',
-                        tags: [],
                         likes: 0,
                         views: 0,
-                        version: 1,
-                        lastViewed: null,
                         metadata: {
                             wordCount: content.trim().split(/\s+/).length,
-                            readTime: Math.ceil(content.trim().split(/\s+/).length / 200) // 阅读时间(分钟)
+                            readTime: Math.ceil(content.trim().split(/\s+/).length / 200)
                         }
                     };
                     
-                    posts.push(newPost);
-                    this.savePosts(posts);
-                    this.updateDbInfo();
-                    this.incrementOperations();
-                    
-                    // 立即备份
-                    this.createBackup();
-                    
-                    console.log('文章永久保存成功:', newPost.id);
+                    await db.collection(this.collection).doc(newPost.id).set(newPost);
+                    console.log('文章成功保存到 Firebase:', newPost.id);
                     return newPost;
                 } catch (error) {
-                    console.error('保存文章失败:', error);
+                    console.error('保存到 Firebase 失败:', error);
                     throw error;
                 }
             }
             
-            // 获取所有文章 - 增强版
-            getAllPosts() {
+            // 获取所有文章
+            async getAllPosts() {
                 try {
-                    const posts = JSON.parse(localStorage.getItem(this.tableName) || '[]');
-                    return posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    const snapshot = await db.collection(this.collection)
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    
+                    const posts = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.createdAt && data.createdAt.toDate) {
+                            data.createdAt = data.createdAt.toDate().toISOString();
+                        }
+                        if (data.updatedAt && data.updatedAt.toDate) {
+                            data.updatedAt = data.updatedAt.toDate().toISOString();
+                        }
+                        posts.push(data);
+                    });
+                    
+                    return posts;
                 } catch (error) {
-                    console.error('读取文章数据失败:', error);
-                    // 尝试从备份恢复
-                    if (this.restoreFromBackup()) {
-                        return this.getAllPosts();
-                    }
+                    console.error('从 Firebase 读取数据失败:', error);
                     return [];
                 }
             }
             
-            // 根据ID获取文章
-            getPostById(id) {
-                const posts = this.getAllPosts();
-                const post = posts.find(post => post.id === id);
-                if (post && post.id !== post.lastViewed) {
-                    // 更新最后阅读时间
-                    this.updatePost(id, { lastViewed: new Date().toISOString() });
-                }
-                return post;
-            }
-            
-            // 搜索文章 - 增强版
-            searchPosts(keyword) {
-                const posts = this.getAllPosts();
-                const searchTerm = keyword.toLowerCase();
-                return posts.filter(post => 
-                    post.title.toLowerCase().includes(searchTerm) ||
-                    post.content.toLowerCase().includes(searchTerm) ||
-                    post.author.toLowerCase().includes(searchTerm) ||
-                    (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
-                );
-            }
-            
-            // 更新文章
-            updatePost(id, updates) {
+            // 搜索文章
+            async searchPosts(keyword) {
                 try {
-                    const posts = this.getAllPosts();
-                    const index = posts.findIndex(post => post.id === id);
+                    const allPosts = await this.getAllPosts();
+                    const searchTerm = keyword.toLowerCase();
                     
-                    if (index !== -1) {
-                        posts[index] = {
-                            ...posts[index],
-                            ...updates,
-                            updatedAt: new Date().toISOString(),
-                            version: (posts[index].version || 1) + 1
-                        };
-                        this.savePosts(posts);
-                        this.updateDbInfo();
-                        this.incrementOperations();
-                        console.log('文章更新成功:', id);
-                        return posts[index];
-                    }
-                    
-                    console.error('文章未找到:', id);
-                    return null;
+                    return allPosts.filter(post => 
+                        post.title.toLowerCase().includes(searchTerm) ||
+                        post.content.toLowerCase().includes(searchTerm) ||
+                        post.author.toLowerCase().includes(searchTerm)
+                    );
                 } catch (error) {
-                    console.error('更新文章失败:', error);
-                    throw error;
+                    console.error('搜索失败:', error);
+                    return [];
                 }
             }
             
             // 删除文章
-            deletePost(id) {
+            async deletePost(id) {
                 try {
-                    const posts = this.getAllPosts();
-                    const filteredPosts = posts.filter(post => post.id !== id);
-                    
-                    if (filteredPosts.length < posts.length) {
-                        this.savePosts(filteredPosts);
-                        this.updateDbInfo();
-                        this.incrementOperations();
-                        this.createBackup(); // 立即备份
-                        console.log('文章删除成功:', id);
-                        return true;
-                    }
-                    
-                    console.error('文章未找到:', id);
-                    return false;
+                    await db.collection(this.collection).doc(id).delete();
+                    console.log('文章删除成功:', id);
+                    return true;
                 } catch (error) {
                     console.error('删除文章失败:', error);
-                    throw error;
-                }
-            }
-            
-            // 增加浏览量
-            incrementViews(id) {
-                const post = this.getPostById(id);
-                if (post) {
-                    this.updatePost(id, { views: post.views + 1 });
+                    return false;
                 }
             }
             
             // 增加点赞
-            incrementLikes(id) {
-                const post = this.getPostById(id);
-                if (post) {
-                    const newLikes = post.likes + 1;
-                    this.updatePost(id, { likes: newLikes });
-                    return newLikes;
-                }
-                return 0;
-            }
-            
-            // 获取数据库统计信息
-            getStats() {
-                const posts = this.getAllPosts();
-                const totalPosts = posts.length;
-                const totalViews = posts.reduce((sum, post) => sum + (post.views || 0), 0);
-                const totalLikes = posts.reduce((sum, post) => sum + (post.likes || 0), 0);
-                const totalWords = posts.reduce((sum, post) => sum + (post.metadata?.wordCount || 0), 0);
-                const authors = [...new Set(posts.map(post => post.author))];
-                
-                const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                
-                return {
-                    totalPosts,
-                    totalViews,
-                    totalLikes,
-                    totalWords,
-                    totalAuthors: authors.length,
-                    authors,
-                    dbVersion: dbInfo.version,
-                    created: dbInfo.created,
-                    lastModified: dbInfo.lastModified,
-                    lastBackup: dbInfo.lastBackup,
-                    totalOperations: dbInfo.totalOperations || 0
-                };
-            }
-            
-            // 保存文章数据 - 增强版
-            savePosts(posts) {
+            async incrementLikes(id) {
                 try {
-                    // 数据验证
-                    if (!Array.isArray(posts)) {
-                        throw new Error('数据格式错误: posts 应该是数组');
-                    }
+                    await db.collection(this.collection).doc(id).update({
+                        likes: firebase.firestore.FieldValue.increment(1)
+                    });
                     
-                    // 检查存储空间
-                    const dataStr = JSON.stringify(posts);
-                    if (dataStr.length > 5 * 1024 * 1024) { // 5MB 限制
-                        console.warn('数据大小超过 5MB，可能影响性能');
-                    }
+                    const doc = await db.collection(this.collection).doc(id).get();
+                    return doc.data().likes;
+                } catch (error) {
+                    console.error('点赞失败:', error);
+                    return 0;
+                }
+            }
+            
+            // 获取统计信息
+            async getStats() {
+                try {
+                    const posts = await this.getAllPosts();
+                    const totalPosts = posts.length;
+                    const totalViews = posts.reduce((sum, post) => sum + (post.views || 0), 0);
+                    const totalLikes = posts.reduce((sum, post) => sum + (post.likes || 0), 0);
+                    const authors = [...new Set(posts.map(post => post.author))];
                     
-                    localStorage.setItem(this.tableName, dataStr);
-                    console.log(`成功保存 ${posts.length} 篇文章`);
+                    return {
+                        totalPosts,
+                        totalViews,
+                        totalLikes,
+                        totalAuthors: authors.length,
+                        authors,
+                        cloudStorage: true,
+                        lastSync: new Date().toISOString()
+                    };
                 } catch (error) {
-                    console.error('保存文章数据失败:', error);
-                    throw error;
+                    console.error('获取统计信息失败:', error);
+                    return { totalPosts: 0, totalViews: 0, totalLikes: 0, totalAuthors: 0, authors: [] };
                 }
             }
             
-            // 更新数据库信息
-            updateDbInfo() {
+            // 导出数据
+            async exportData() {
                 try {
-                    const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                    dbInfo.lastModified = new Date().toISOString();
-                    localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
+                    const posts = await this.getAllPosts();
+                    return {
+                        exportDate: new Date().toISOString(),
+                        exportVersion: '3.0-Firebase',
+                        posts: posts
+                    };
                 } catch (error) {
-                    console.error('更新数据库信息失败:', error);
-                }
-            }
-            
-            // 导出数据 - 增强版
-            exportData() {
-                const posts = this.getAllPosts();
-                const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                const backupPosts = JSON.parse(localStorage.getItem(this.backupTableName) || '[]');
-                
-                return {
-                    database: dbInfo,
-                    posts: posts,
-                    backup: backupPosts,
-                    exportDate: new Date().toISOString(),
-                    exportVersion: '2.0'
-                };
-            }
-            
-            // 导入数据 - 增强版
-            importData(data) {
-                try {
-                    if (data.posts && Array.isArray(data.posts)) {
-                        // 备份当前数据
-                        this.createBackup();
-                        
-                        // 导入新数据
-                        this.savePosts(data.posts);
-                        this.updateDbInfo();
-                        this.incrementOperations();
-                        
-                        console.log(`数据导入成功: ${data.posts.length} 篇文章`);
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error('数据导入失败:', error);
+                    console.error('导出数据失败:', error);
                     throw error;
                 }
             }
             
             // 清空数据库
-            clearDatabase() {
+            async clearDatabase() {
                 try {
-                    // 先备份
-                    this.createBackup();
+                    const snapshot = await db.collection(this.collection).get();
+                    const batch = db.batch();
                     
-                    localStorage.removeItem(this.tableName);
-                    localStorage.removeItem(`${this.dbName}_info`);
-                    this.initDatabase();
+                    snapshot.docs.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
                     
-                    console.log('数据库已清空（已备份）');
+                    await batch.commit();
+                    console.log('Firebase 数据库已清空');
                 } catch (error) {
                     console.error('清空数据库失败:', error);
                     throw error;
                 }
             }
-            
-            // 数据库健康检查
-            healthCheck() {
-                try {
-                    const posts = this.getAllPosts();
-                    const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
-                    const backup = JSON.parse(localStorage.getItem(this.backupTableName) || '[]');
-                    
-                    const health = {
-                        status: 'healthy',
-                        issues: [],
-                        recommendations: []
-                    };
-                    
-                    // 检查数据一致性
-                    if (posts.length === 0 && backup.length > 0) {
-                        health.issues.push('主数据为空，但存在备份数据');
-                        health.recommendations.push('考虑从备份恢复数据');
-                    }
-                    
-                    // 检查备份时间
-                    if (dbInfo.lastBackup) {
-                        const lastBackupTime = new Date(dbInfo.lastBackup);
-                        const now = new Date();
-                        const hoursSinceBackup = (now - lastBackupTime) / (1000 * 60 * 60);
-                        
-                        if (hoursSinceBackup > 24) {
-                            health.issues.push(`备份时间过久: ${Math.floor(hoursSinceBackup)} 小时前`);
-                            health.recommendations.push('建议立即创建备份');
-                        }
-                    } else {
-                        health.issues.push('从未创建备份');
-                        health.recommendations.push('建议立即创建备份');
-                    }
-                    
-                    if (health.issues.length > 0) {
-                        health.status = 'warning';
-                    }
-                    
-                    return health;
-                } catch (error) {
-                    return {
-                        status: 'error',
-                        issues: ['数据库健康检查失败'],
-                        error: error.message
-                    };
-                }
-            }
         }
         
-        // 创建永久数据库实例
-        const postDB = new PermanentPostDatabase();
-        
-        // 创建玫瑰背景
-        function createRoses() {
-            const rosesContainer = document.getElementById('roses');
-            const roseCount = 15; // 玫瑰数量
-            
-            for (let i = 0; i < roseCount; i++) {
-                const rose = document.createElement('div');
-                rose.classList.add('rose');
-                
-                // 随机大小、位置和动画延迟
-                const size = Math.random() * 20 + 30;
-                const left = Math.random() * 100;
-                const animationDelay = Math.random() * 10;
-                const animationDuration = Math.random() * 6 + 12;
-                const hueRotate = Math.random() * 60 - 30; // -30到30度
-                
-                rose.style.width = `${size}px`;
-                rose.style.height = `${size}px`;
-                rose.style.left = `${left}vw`;
-                rose.style.animationDelay = `${animationDelay}s`;
-                rose.style.animationDuration = `${animationDuration}s`;
-                rose.style.filter = `hue-rotate(${hueRotate}deg) drop-shadow(0 0 3px rgba(128, 0, 128, 0.7))`;
-                
-                rosesContainer.appendChild(rose);
-            }
-        }
-        audio.src = 'cddcf-daolang.mp3'; // 示例音频文件
-        audio.preload = 'metadata';
-        
-        // 音频事件监听
-        audio.addEventListener('loadedmetadata', () => {
-            displayTime();
-        });
-        
-        audio.addEventListener('timeupdate', () => {
-            if (audio.duration) {
-                const progressPercent = (audio.currentTime / audio.duration) * 100;
-                progress.style.width = `${progressPercent}%`;
-                displayTime();
-            }
-        });
-        
-        audio.addEventListener('ended', () => {
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            progress.style.width = '0%';
-            audio.currentTime = 0;
-            displayTime();
-        });
-        
-        audio.addEventListener('error', (e) => {
-            console.log('音频加载失败:', e);
-            // 使用备用音频源
-            audio.src = 'cddcf-daolang.mp3';
-        });
-        
-        // 播放/暂停
-        playBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play().then(() => {
-                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                }).catch(error => {
-                    console.log('播放失败:', error);
-                });
-            } else {
-                audio.pause();
-                playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
-        });
-        
-        // 点击进度条跳转
-        progressContainer.addEventListener('click', (e) => {
-            if (audio.duration) {
-                const width = progressContainer.clientWidth;
-                const clickX = e.offsetX;
-                const percent = clickX / width;
-                audio.currentTime = percent * audio.duration;
-            }
-        });
+        // 创建 Firebase 数据库实例
 
-        
-        // 显示时间
-        function displayTime() {
-            const currentMinutes = Math.floor(audio.currentTime / 60);
-            const currentSeconds = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
-            const durationMinutes = Math.floor((audio.duration || 0) / 60);
-            const durationSeconds = Math.floor((audio.duration || 0) % 60).toString().padStart(2, '0');
-            
-            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds}`;
-            durationEl.textContent = `${durationMinutes}:${durationSeconds}`;
-        }
-
-        
-        
-        // 音乐播放器功能
-        const playBtn = document.getElementById('play');
-        const progress = document.getElementById('progress');
-        const progressContainer = document.getElementById('progress-container');
-        const currentTimeEl = document.getElementById('current-time');
-        const durationEl = document.getElementById('duration');
-        
-        // 创建真实的Audio对象
-        let audio = new Audio();
-        audio.src = 'cddcf-daolang.mp3'; // 示例音频文件
-        audio.preload = 'metadata';
-        
-        // 音频事件监听
-        audio.addEventListener('loadedmetadata', () => {
-            displayTime();
-        });
-        
-        audio.addEventListener('timeupdate', () => {
-            if (audio.duration) {
-                const progressPercent = (audio.currentTime / audio.duration) * 100;
-                progress.style.width = `${progressPercent}%`;
-                displayTime();
-            }
-        });
-        
-        audio.addEventListener('ended', () => {
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            progress.style.width = '0%';
-            audio.currentTime = 0;
-            displayTime();
-        });
-        
-        audio.addEventListener('error', (e) => {
-            console.log('音频加载失败:', e);
-            // 使用备用音频源
-            audio.src = 'cddcf-daolang.mp3';
-        });
-        
-        // 播放/暂停
-        playBtn.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play().then(() => {
-                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-                }).catch(error => {
-                    console.log('播放失败:', error);
-                });
-            } else {
-                audio.pause();
-                playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            }
-        });
-        
-        // 点击进度条跳转
-        progressContainer.addEventListener('click', (e) => {
-            if (audio.duration) {
-                const width = progressContainer.clientWidth;
-                const clickX = e.offsetX;
-                const percent = clickX / width;
-                audio.currentTime = percent * audio.duration;
-            }
-        });
-
-        
-        // 显示时间
-        function displayTime() {
-            const currentMinutes = Math.floor(audio.currentTime / 60);
-            const currentSeconds = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
-            const durationMinutes = Math.floor((audio.duration || 0) / 60);
-            const durationSeconds = Math.floor((audio.duration || 0) % 60).toString().padStart(2, '0');
-            
-            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds}`;
-            durationEl.textContent = `${durationMinutes}:${durationSeconds}`;
-        }
         
         // 短文发布功能
         const postForm = document.getElementById('post-form');
@@ -1287,7 +887,7 @@
         }
         
         // 表单提交处理
-        postForm.addEventListener('submit', (e) => {
+        postForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const title = document.getElementById('title').value.trim();
@@ -1295,12 +895,9 @@
             const author = document.getElementById('author').value.trim() || '匿名用户';
             
             if (title && content) {
-                if (savePost(title, content, author)) {
-                    // 重置表单
+                if (await savePost(title, content, author)) {
                     postForm.reset();
                     document.getElementById('author').value = '匿名用户';
-                    
-                    // 显示成功消息
                     alert('短文发布成功！');
                 }
             } else {
@@ -1308,31 +905,12 @@
             }
         });
         
-        // 搜索输入框回车事件
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                searchPosts();
-            }
-        });
-        
         // 页面加载时初始化
-        document.addEventListener('DOMContentLoaded', () => {
-            createRoses(); // 创建玫瑰背景
-            displayTime(); // 初始化音乐播放器时间显示
-            loadPosts(); // 加载所有短文
-            
-            // 显示数据库初始化信息
-            console.log('永久数据库系统初始化完成');
-            console.log('当前数据库统计:', postDB.getStats());
-            
-            // 执行数据库健康检查
-            const health = postDB.healthCheck();
-            console.log('数据库健康状态:', health);
-            
-            if (health.status === 'warning') {
-                console.warn('数据库警告:', health.issues);
-                console.log('建议措施:', health.recommendations);
-            }
+        document.addEventListener('DOMContentLoaded', async () => {
+            createRoses();
+            displayTime();
+            await loadPosts();
+            console.log('Firebase 数据库系统初始化完成');
         });
     </script>
 </body>
