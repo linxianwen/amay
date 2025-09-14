@@ -361,7 +361,67 @@
                 <i class="fas fa-pen-fancy"></i>
                 <h2>发布你的短文</h2>
             </div>
+            
+            <!-- 搜索功能 -->
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(233, 213, 255, 0.3); border-radius: 10px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="search-input" placeholder="搜索文章标题、内容或作者..." style="
+                        flex: 1; padding: 10px; border: 1px solid #c084fc; border-radius: 8px;
+                        font-size: 0.9rem;
+                    ">
+                    <button onclick="searchPosts()" style="
+                        padding: 10px 15px; background: linear-gradient(135deg, #c084fc 0%, #db2777 100%);
+                        color: white; border: none; border-radius: 8px; cursor: pointer;
+                    ">
+                        <i class="fas fa-search"></i> 搜索
+                    </button>
+                    <button onclick="loadPosts()" style="
+                        padding: 10px 15px; background: #6b7280; color: white;
+                        border: none; border-radius: 8px; cursor: pointer;
+                    ">
+                        清空
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 数据库管理 -->
+            <div style="margin-bottom: 20px; padding: 15px; background: rgba(233, 213, 255, 0.3); border-radius: 10px;">
+                <h4 style="margin-bottom: 10px; color: #7e22ce;">
+                    <i class="fas fa-database"></i> 数据库管理
+                </h4>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="exportData()" style="
+                        padding: 8px 12px; background: #10b981; color: white;
+                        border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+                    ">
+                        <i class="fas fa-download"></i> 导出数据
+                    </button>
+                    <button onclick="importData()" style="
+                        padding: 8px 12px; background: #3b82f6; color: white;
+                        border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+                    ">
+                        <i class="fas fa-upload"></i> 导入数据
+                    </button>
+                    <button onclick="showStats()" style="
+                        padding: 8px 12px; background: #8b5cf6; color: white;
+                        border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+                    ">
+                        <i class="fas fa-chart-bar"></i> 统计信息
+                    </button>
+                    <button onclick="clearDatabase()" style="
+                        padding: 8px 12px; background: #ef4444; color: white;
+                        border: none; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
+                    ">
+                        <i class="fas fa-trash"></i> 清空数据库
+                    </button>
+                </div>
+            </div>
+            
             <form id="post-form">
+                <div class="form-group">
+                    <label for="author">作者</label>
+                    <input type="text" id="author" placeholder="输入你的名字（可选）" value="匿名用户">
+                </div>
                 <div class="form-group">
                     <label for="title">标题</label>
                     <input type="text" id="title" placeholder="为你的短文起个标题..." required>
@@ -487,14 +547,242 @@
         }
 
         
+        // 数据库管理系统 - 本地存储实现
+        class PostDatabase {
+            constructor() {
+                this.dbName = 'romanticPostsDB';
+                this.version = '1.0';
+                this.tableName = 'posts';
+                this.initDatabase();
+            }
+            
+            // 初始化数据库
+            initDatabase() {
+                const dbInfo = {
+                    name: this.dbName,
+                    version: this.version,
+                    created: new Date().toISOString(),
+                    lastModified: new Date().toISOString()
+                };
+                
+                if (!localStorage.getItem(`${this.dbName}_info`)) {
+                    localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
+                    localStorage.setItem(this.tableName, JSON.stringify([]));
+                    console.log('数据库初始化完成');
+                }
+            }
+            
+            // 生成唯一ID
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+            
+            // 添加文章
+            insertPost(title, content, author = '匿名用户') {
+                const posts = this.getAllPosts();
+                const newPost = {
+                    id: this.generateId(),
+                    title: title.trim(),
+                    content: content.trim(),
+                    author: author,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    status: 'published',
+                    tags: [],
+                    likes: 0,
+                    views: 0
+                };
+                
+                posts.push(newPost);
+                this.savePosts(posts);
+                this.updateDbInfo();
+                
+                console.log('文章添加成功:', newPost.id);
+                return newPost;
+            }
+            
+            // 获取所有文章
+            getAllPosts() {
+                try {
+                    const posts = JSON.parse(localStorage.getItem(this.tableName) || '[]');
+                    return posts;
+                } catch (error) {
+                    console.error('读取文章数据失败:', error);
+                    return [];
+                }
+            }
+            
+            // 根据ID获取文章
+            getPostById(id) {
+                const posts = this.getAllPosts();
+                return posts.find(post => post.id === id);
+            }
+            
+            // 搜索文章
+            searchPosts(keyword) {
+                const posts = this.getAllPosts();
+                const searchTerm = keyword.toLowerCase();
+                return posts.filter(post => 
+                    post.title.toLowerCase().includes(searchTerm) ||
+                    post.content.toLowerCase().includes(searchTerm) ||
+                    post.author.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // 按日期范围获取文章
+            getPostsByDateRange(startDate, endDate) {
+                const posts = this.getAllPosts();
+                return posts.filter(post => {
+                    const postDate = new Date(post.createdAt);
+                    return postDate >= new Date(startDate) && postDate <= new Date(endDate);
+                });
+            }
+            
+            // 更新文章
+            updatePost(id, updates) {
+                const posts = this.getAllPosts();
+                const index = posts.findIndex(post => post.id === id);
+                
+                if (index !== -1) {
+                    posts[index] = {
+                        ...posts[index],
+                        ...updates,
+                        updatedAt: new Date().toISOString()
+                    };
+                    this.savePosts(posts);
+                    this.updateDbInfo();
+                    console.log('文章更新成功:', id);
+                    return posts[index];
+                }
+                
+                console.error('文章未找到:', id);
+                return null;
+            }
+            
+            // 删除文章
+            deletePost(id) {
+                const posts = this.getAllPosts();
+                const filteredPosts = posts.filter(post => post.id !== id);
+                
+                if (filteredPosts.length < posts.length) {
+                    this.savePosts(filteredPosts);
+                    this.updateDbInfo();
+                    console.log('文章删除成功:', id);
+                    return true;
+                }
+                
+                console.error('文章未找到:', id);
+                return false;
+            }
+            
+            // 增加浏览量
+            incrementViews(id) {
+                const post = this.getPostById(id);
+                if (post) {
+                    this.updatePost(id, { views: post.views + 1 });
+                }
+            }
+            
+            // 增加点赞
+            incrementLikes(id) {
+                const post = this.getPostById(id);
+                if (post) {
+                    this.updatePost(id, { likes: post.likes + 1 });
+                    return post.likes + 1;
+                }
+                return 0;
+            }
+            
+            // 获取数据库统计信息
+            getStats() {
+                const posts = this.getAllPosts();
+                const totalPosts = posts.length;
+                const totalViews = posts.reduce((sum, post) => sum + (post.views || 0), 0);
+                const totalLikes = posts.reduce((sum, post) => sum + (post.likes || 0), 0);
+                const authors = [...new Set(posts.map(post => post.author))];
+                
+                return {
+                    totalPosts,
+                    totalViews,
+                    totalLikes,
+                    totalAuthors: authors.length,
+                    authors
+                };
+            }
+            
+            // 保存文章数据
+            savePosts(posts) {
+                try {
+                    localStorage.setItem(this.tableName, JSON.stringify(posts));
+                } catch (error) {
+                    console.error('保存文章数据失败:', error);
+                }
+            }
+            
+            // 更新数据库信息
+            updateDbInfo() {
+                const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
+                dbInfo.lastModified = new Date().toISOString();
+                localStorage.setItem(`${this.dbName}_info`, JSON.stringify(dbInfo));
+            }
+            
+            // 导出数据
+            exportData() {
+                const posts = this.getAllPosts();
+                const dbInfo = JSON.parse(localStorage.getItem(`${this.dbName}_info`));
+                
+                return {
+                    database: dbInfo,
+                    posts: posts,
+                    exportDate: new Date().toISOString()
+                };
+            }
+            
+            // 导入数据
+            importData(data) {
+                try {
+                    if (data.posts && Array.isArray(data.posts)) {
+                        this.savePosts(data.posts);
+                        this.updateDbInfo();
+                        console.log('数据导入成功');
+                        return true;
+                    }
+                } catch (error) {
+                    console.error('数据导入失败:', error);
+                }
+                return false;
+            }
+            
+            // 清空数据库
+            clearDatabase() {
+                localStorage.removeItem(this.tableName);
+                localStorage.removeItem(`${this.dbName}_info`);
+                this.initDatabase();
+                console.log('数据库已清空');
+            }
+        }
+        
+        // 创建数据库实例
+        const postDB = new PostDatabase();
+        
         // 短文发布功能
         const postForm = document.getElementById('post-form');
         const postsContainer = document.getElementById('posts-container');
         
-        // 从本地存储加载短文
+        // 加载并显示所有短文
         function loadPosts() {
-            const posts = JSON.parse(localStorage.getItem('romanticPosts')) || [];
-            postsContainer.innerHTML = '<h2 style="text-align: center; margin-bottom: 20px; color: #7e22ce;">短文列表</h2>';
+            const posts = postDB.getAllPosts();
+            const stats = postDB.getStats();
+            
+            // 清空容器
+            postsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #7e22ce; margin-bottom: 10px;">短文列表</h2>
+                    <p style="color: #a855f7; font-size: 0.9rem;">
+                        共 ${stats.totalPosts} 篇文章 • ${stats.totalViews} 次阅读 • ${stats.totalLikes} 个赞
+                    </p>
+                </div>
+            `;
             
             if (posts.length === 0) {
                 postsContainer.innerHTML += '<p style="text-align: center; color: #7e22ce;">还没有短文，发布一篇吧！</p>';
@@ -502,57 +790,263 @@
             }
             
             // 按时间倒序排列
-            posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             posts.forEach(post => {
                 const postEl = document.createElement('div');
                 postEl.classList.add('post');
+                postEl.setAttribute('data-post-id', post.id);
+                
                 postEl.innerHTML = `
-                    <h3>${post.title}</h3>
-                    <p>${post.content}</p>
-                    <p class="post-date">发布于：${new Date(post.date).toLocaleString()}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                        <h3>${post.title}</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <button class="like-btn" onclick="likePost('${post.id}')" style="
+                                background: none; border: 1px solid #c084fc; color: #7e22ce; 
+                                padding: 5px 10px; border-radius: 15px; cursor: pointer;
+                                font-size: 0.8rem; transition: all 0.3s ease;
+                            ">
+                                ❤️ ${post.likes || 0}
+                            </button>
+                            <button class="delete-btn" onclick="deletePost('${post.id}')" style="
+                                background: none; border: 1px solid #ef4444; color: #ef4444;
+                                padding: 5px 10px; border-radius: 15px; cursor: pointer;
+                                font-size: 0.8rem; transition: all 0.3s ease;
+                            ">
+                                删除
+                            </button>
+                        </div>
+                    </div>
+                    <p style="margin-bottom: 15px;">${post.content}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #a855f7; font-size: 0.9rem;">
+                            作者：${post.author} • 阅读 ${post.views || 0} 次
+                        </div>
+                        <div class="post-date">
+                            发布于：${new Date(post.createdAt).toLocaleString()}
+                        </div>
+                    </div>
+                `;
+                
+                // 增加浏览量（仅在首次加载时）
+                postDB.incrementViews(post.id);
+                
+                postsContainer.appendChild(postEl);
+            });
+        }
+        
+        // 保存新短文
+        function savePost(title, content, author = '匿名用户') {
+            try {
+                const newPost = postDB.insertPost(title, content, author);
+                
+                if (newPost) {
+                    loadPosts(); // 重新加载显示所有短文
+                    return true;
+                }
+            } catch (error) {
+                console.error('保存短文失败:', error);
+                alert('保存失败，请重试！');
+            }
+            return false;
+        }
+        
+        // 点赞功能
+        function likePost(postId) {
+            const newLikes = postDB.incrementLikes(postId);
+            loadPosts(); // 重新加载以更新点赞数
+        }
+        
+        // 删除文章
+        function deletePost(postId) {
+            if (confirm('确定要删除这篇文章吗？')) {
+                if (postDB.deletePost(postId)) {
+                    loadPosts(); // 重新加载显示
+                    alert('文章已删除！');
+                } else {
+                    alert('删除失败！');
+                }
+            }
+        }
+        
+        // 搜索功能
+        function searchPosts() {
+            const keyword = document.getElementById('search-input').value.trim();
+            if (!keyword) {
+                loadPosts();
+                return;
+            }
+            
+            const results = postDB.searchPosts(keyword);
+            const stats = postDB.getStats();
+            
+            postsContainer.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="color: #7e22ce; margin-bottom: 10px;">搜索结果</h2>
+                    <p style="color: #a855f7; font-size: 0.9rem;">
+                        找到 ${results.length} 篇相关文章 • 关键词："${keyword}"
+                    </p>
+                </div>
+            `;
+            
+            if (results.length === 0) {
+                postsContainer.innerHTML += '<p style="text-align: center; color: #7e22ce;">未找到相关文章</p>';
+                return;
+            }
+            
+            results.forEach(post => {
+                const postEl = document.createElement('div');
+                postEl.classList.add('post');
+                postEl.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                        <h3>${highlightKeyword(post.title, keyword)}</h3>
+                        <button class="like-btn" onclick="likePost('${post.id}')" style="
+                            background: none; border: 1px solid #c084fc; color: #7e22ce; 
+                            padding: 5px 10px; border-radius: 15px; cursor: pointer;
+                            font-size: 0.8rem;
+                        ">
+                            ❤️ ${post.likes || 0}
+                        </button>
+                    </div>
+                    <p style="margin-bottom: 15px;">${highlightKeyword(post.content, keyword)}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="color: #a855f7; font-size: 0.9rem;">
+                            作者：${highlightKeyword(post.author, keyword)} • 阅读 ${post.views || 0} 次
+                        </div>
+                        <div class="post-date">
+                            发布于：${new Date(post.createdAt).toLocaleString()}
+                        </div>
+                    </div>
                 `;
                 postsContainer.appendChild(postEl);
             });
         }
         
-        // 保存短文到本地存储
-        function savePost(title, content) {
-            const posts = JSON.parse(localStorage.getItem('romanticPosts')) || [];
-            const newPost = {
-                title,
-                content,
-                date: new Date().toISOString()
+        // 高亮关键词
+        function highlightKeyword(text, keyword) {
+            if (!keyword) return text;
+            const regex = new RegExp(`(${keyword})`, 'gi');
+            return text.replace(regex, '<mark style="background: #fbbf24; padding: 2px;">$1</mark>');
+        }
+        
+        // 导出数据
+        function exportData() {
+            try {
+                const data = postDB.exportData();
+                const dataStr = JSON.stringify(data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `romantic_posts_${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+                
+                alert('数据导出成功！');
+            } catch (error) {
+                console.error('导出失败:', error);
+                alert('导出失败！');
+            }
+        }
+        
+        // 导入数据
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (postDB.importData(data)) {
+                            loadPosts();
+                            alert('数据导入成功！');
+                        } else {
+                            alert('数据格式错误！');
+                        }
+                    } catch (error) {
+                        console.error('导入失败:', error);
+                        alert('文件格式错误！');
+                    }
+                };
+                reader.readAsText(file);
             };
             
-            posts.push(newPost);
-            localStorage.setItem('romanticPosts', JSON.stringify(posts));
+            input.click();
+        }
+        
+        // 显示统计信息
+        function showStats() {
+            const stats = postDB.getStats();
+            const dbInfo = JSON.parse(localStorage.getItem('romanticPostsDB_info'));
             
-            loadPosts(); // 重新加载显示所有短文
+            const message = `
+📊 数据库统计信息
+
+📄 文章总数：${stats.totalPosts} 篇
+👁️ 总阅读量：${stats.totalViews} 次
+❤️ 总点赞数：${stats.totalLikes} 个
+👥 作者数量：${stats.totalAuthors} 人
+
+📅 数据库创建：${new Date(dbInfo.created).toLocaleString()}
+🔄 最后更新：${new Date(dbInfo.lastModified).toLocaleString()}
+💾 数据库版本：${dbInfo.version}
+            `;
+            
+            alert(message);
+        }
+        
+        // 清空数据库
+        function clearDatabase() {
+            if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                postDB.clearDatabase();
+                loadPosts();
+                alert('数据库已清空！');
+            }
         }
         
         // 表单提交处理
         postForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            const author = document.getElementById('author').value.trim() || '匿名用户';
             
             if (title && content) {
-                savePost(title, content);
-                
-                // 重置表单
-                postForm.reset();
-                
-                // 显示成功消息
-                alert('短文发布成功！');
+                if (savePost(title, content, author)) {
+                    // 重置表单
+                    postForm.reset();
+                    document.getElementById('author').value = '匿名用户';
+                    
+                    // 显示成功消息
+                    alert('短文发布成功！');
+                }
+            } else {
+                alert('请填写标题和内容！');
+            }
+        });
+        
+        // 搜索输入框回车事件
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchPosts();
             }
         });
         
         // 页面加载时初始化
         document.addEventListener('DOMContentLoaded', () => {
             createRoses(); // 创建玫瑰背景
+            displayTime(); // 初始化音乐播放器时间显示
             loadPosts(); // 加载所有短文
+            
+            // 显示数据库初始化信息
+            console.log('数据库系统初始化完成');
+            console.log('当前数据库统计:', postDB.getStats());
         });
     </script>
 </body>
