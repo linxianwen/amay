@@ -3,738 +3,557 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>霓虹音乐播放器</title>
+    <title>浪漫短文分享平台</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5d9e8 0%, #c4b5fd 100%);
+            color: #4a2c5e;
             min-height: 100vh;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
             padding: 20px;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 400px;
-            background: rgba(25, 25, 50, 0.7);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(10px);
-        }
-        
-        .header {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             align-items: center;
-            margin-bottom: 25px;
-        }
-        
-        .title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #e6e6ff;
-        }
-        
-        .settings-btn {
-            background: none;
-            border: none;
-            color: #a0a0ee;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-        
-        .settings-btn:hover {
-            color: #fff;
-        }
-        
-        .album-art {
-            width: 250px;
-            height: 250px;
-            margin: 0 auto 25px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #3498db, #8e44ad);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
-            animation: rotate 20s linear infinite paused;
         }
         
-        .album-art.play {
-            animation-play-state: running;
-        }
-        
-        .album-image {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .album-overlay {
-            position: absolute;
+        /* 玫瑰背景样式 */
+        .roses {
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: -1;
         }
         
-        .album-art:hover .album-overlay {
-            opacity: 1;
+        .rose {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: float 12s linear infinite;
+            filter: drop-shadow(0 0 5px rgba(128, 0, 128, 0.5));
         }
         
-        .song-info {
+        .rose::before {
+            content: '🌹';
+            font-size: 40px;
+            color: #8a2be2;
+            position: absolute;
+            width: 100%;
+            height: 100%;
             text-align: center;
-            margin-bottom: 25px;
         }
         
-        .song-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: #fff;
+        @keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0.8);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg) scale(1.2);
+                opacity: 0;
+            }
         }
         
-        .song-artist {
-            font-size: 1rem;
-            color: #a0a0ee;
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            z-index: 1;
         }
         
-        .progress-container {
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            color: #6b21a8;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            color: #7e22ce;
             margin-bottom: 20px;
         }
         
-        .progress-time {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.8rem;
-            color: #a0a0ee;
-        }
-        
-        .progress-bar {
+        .player-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
             width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            cursor: pointer;
+            backdrop-filter: blur(5px);
         }
         
-        .progress {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(to right, #3498db, #8e44ad);
-            border-radius: 3px;
-            transition: width 0.1s linear;
-        }
-        
-        .controls {
+        .player-title {
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 25px;
-            margin-bottom: 25px;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: #7e22ce;
         }
         
-        .control-btn {
-            background: none;
-            border: none;
-            color: #e6e6ff;
-            font-size: 1.2rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 40px;
-            height: 40px;
+        .player-title i {
+            margin-right: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .player-controls {
             display: flex;
-            justify-content: center;
             align-items: center;
-            border-radius: 50%;
-        }
-        
-        .control-btn:hover {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.1);
+            justify-content: space-between;
+            margin-bottom: 15px;
         }
         
         .play-btn {
-            background: linear-gradient(45deg, #3498db, #8e44ad);
             width: 60px;
             height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #c084fc 0%, #db2777 100%);
+            color: white;
+            border: none;
             font-size: 1.8rem;
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.5);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(219, 39, 119, 0.3);
+            transition: all 0.3s ease;
         }
         
         .play-btn:hover {
             transform: scale(1.05);
-            background: linear-gradient(45deg, #2980b9, #7d3c98);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.6);
+            box-shadow: 0 8px 20px rgba(219, 39, 119, 0.4);
         }
         
-        .volume-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .volume-icon {
-            color: #a0a0ee;
-            font-size: 1.2rem;
-        }
-        
-        .volume-slider {
-            flex: 1;
-            -webkit-appearance: none;
-            height: 5px;
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            outline: none;
-        }
-        
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: #3498db;
+        .progress-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            background: #e9d5ff;
+            height: 8px;
+            border-radius: 4px;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.8);
         }
         
-        .playlist {
-            margin-top: 20px;
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.5s ease;
+        .progress {
+            background: linear-gradient(to right, #c084fc, #db2777);
+            height: 100%;
+            width: 0%;
+            border-radius: 4px;
+            transition: width 0.1s ease;
         }
         
-        .playlist.show {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .playlist-header {
+        .time-container {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .playlist-title {
-            font-size: 1.2rem;
-            color: #e6e6ff;
-        }
-        
-        .close-playlist {
-            background: none;
-            border: none;
-            color: #a0a0ee;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-        
-        .playlist-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        
-        .playlist-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        
-        .playlist-item.active {
-            background: rgba(52, 152, 219, 0.2);
-        }
-        
-        .playlist-item img {
-            width: 40px;
-            height: 40px;
-            border-radius: 6px;
-            margin-right: 15px;
-            object-fit: cover;
-        }
-        
-        .playlist-details {
-            flex: 1;
-        }
-        
-        .playlist-song {
+            color: #7e22ce;
             font-size: 0.9rem;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: #fff;
+            margin-top: 5px;
         }
         
-        .playlist-artist {
-            font-size: 0.8rem;
-            color: #a0a0ee;
+        .song-info {
+            text-align: center;
+            margin-top: 15px;
+            font-style: italic;
+            color: #7e22ce;
         }
         
-        .visualizer {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            height: 50px;
-            margin-bottom: 20px;
-            padding: 0 10px;
-        }
-        
-        .bar {
-            width: 6px;
-            background: linear-gradient(to top, #3498db, #8e44ad);
-            border-radius: 3px 3px 0 0;
-            height: 20%;
-            transition: height 0.3s ease;
-        }
-        
-        .toggle-playlist {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
+        .post-container {
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 20px;
-            color: #a0a0ee;
-            padding: 8px 15px;
+            padding: 25px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
             width: 100%;
-            cursor: pointer;
-            transition: background 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        
+        .post-title {
             display: flex;
-            justify-content: center;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+            color: #7e22ce;
         }
         
-        .toggle-playlist:hover {
-            background: rgba(255, 255, 255, 0.2);
+        .post-title i {
+            margin-right: 10px;
+            font-size: 1.8rem;
         }
         
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-            to {
-                transform: rotate(360deg);
-            }
+        .form-group {
+            margin-bottom: 20px;
         }
         
-        /* 滚动条样式 */
-        .playlist::-webkit-scrollbar {
-            width: 5px;
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #7e22ce;
         }
         
-        .playlist::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e9d5ff;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
         
-        .playlist::-webkit-scrollbar-thumb {
-            background: rgba(52, 152, 219, 0.5);
-            border-radius: 10px;
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #c084fc;
         }
         
-        /* 响应式设计 */
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px;
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #c084fc 0%, #db2777 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(219, 39, 119, 0.3);
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(219, 39, 119, 0.4);
+        }
+        
+        .posts-container {
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .post {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        .post:hover {
+            transform: translateY(-5px);
+        }
+        
+        .post h3 {
+            color: #7e22ce;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #e9d5ff;
+            padding-bottom: 10px;
+        }
+        
+        .post p {
+            line-height: 1.6;
+            color: #4a2c5e;
+            margin-bottom: 15px;
+        }
+        
+        .post-date {
+            color: #a855f7;
+            font-size: 0.9rem;
+            text-align: right;
+            font-style: italic;
+        }
+        
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #7e22ce;
+            padding: 20px;
+            width: 100%;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
             }
             
-            .album-art {
-                width: 200px;
-                height: 200px;
+            .player-container, .post-container {
+                padding: 20px;
             }
             
-            .controls {
-                gap: 15px;
+            .play-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.5rem;
+            }
+            
+            .rose {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .rose::before {
+                font-size: 30px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- 玫瑰背景容器 -->
+    <div class="roses" id="roses"></div>
+    
     <div class="container">
-        <div class="header">
-            <h1 class="title">霓虹音乐</h1>
-            <button class="settings-btn">
-                <i class="fas fa-cog"></i>
-            </button>
-        </div>
+        <header>
+            <h1>浪漫短文分享</h1>
+            <p class="subtitle">写下你的心情，让音乐伴随文字流淌</p>
+        </header>
         
-        <div class="album-art" id="albumArt">
-            <div class="album-image" style="background: linear-gradient(45deg, #3498db, #8e44ad);"></div>
-            <div class="album-overlay">
+        <div class="player-container">
+            <div class="player-title">
                 <i class="fas fa-music"></i>
+                <h2>冲动的惩罚</h2>
             </div>
-        </div>
-        
-        <div class="visualizer" id="visualizer">
-            <!-- 音频可视化条将通过JS动态生成 -->
-        </div>
-        
-        <div class="song-info">
-            <h2 class="song-title" id="songTitle">星空之下</h2>
-            <p class="song-artist" id="songArtist">幻梦乐队</p>
-        </div>
-        
-        <div class="progress-container">
-            <div class="progress-time">
-                <span id="currentTime">0:00</span>
+            <div class="player-controls">
+                <button class="play-btn" id="play">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="progress-container" id="progress-container">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+            <div class="time-container">
+                <span id="current-time">0:00</span>
                 <span id="duration">0:00</span>
             </div>
-            <div class="progress-bar" id="progressBar">
-                <div class="progress" id="progress"></div>
+            <div class="song-info">
+                <p>正在播放：温柔钢琴曲 - 《浪漫之夜》</p>
             </div>
         </div>
         
-        <div class="controls">
-            <button class="control-btn" id="shuffleBtn">
-                <i class="fas fa-random"></i>
-            </button>
-            <button class="control-btn" id="prevBtn">
-                <i class="fas fa-step-backward"></i>
-            </button>
-            <button class="control-btn play-btn" id="playBtn">
-                <i class="fas fa-play" id="playIcon"></i>
-            </button>
-            <button class="control-btn" id="nextBtn">
-                <i class="fas fa-step-forward"></i>
-            </button>
-            <button class="control-btn" id="repeatBtn">
-                <i class="fas fa-redo"></i>
-            </button>
-        </div>
-        
-        <div class="volume-container">
-            <i class="fas fa-volume-up volume-icon"></i>
-            <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.01" value="0.7">
-        </div>
-        
-        <button class="toggle-playlist" id="togglePlaylist">
-            <i class="fas fa-list"></i> 播放列表
-        </button>
-        
-        <div class="playlist" id="playlist">
-            <div class="playlist-header">
-                <h3 class="playlist-title">播放列表</h3>
-                <button class="close-playlist" id="closePlaylist">
-                    <i class="fas fa-times"></i>
-                </button>
+        <div class="post-container">
+            <div class="post-title">
+                <i class="fas fa-pen-fancy"></i>
+                <h2>发布你的短文</h2>
             </div>
-            <!-- 播放列表项将通过JS动态添加 -->
+            <form id="post-form">
+                <div class="form-group">
+                    <label for="title">标题</label>
+                    <input type="text" id="title" placeholder="为你的短文起个标题..." required>
+                </div>
+                <div class="form-group">
+                    <label for="content">内容</label>
+                    <textarea id="content" placeholder="写下你的浪漫故事或心情..." required></textarea>
+                </div>
+                <button type="submit" class="submit-btn">发布短文</button>
+            </form>
+        </div>
+        
+        <div class="posts-container" id="posts-container">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #7e22ce;">短文列表</h2>
+            <!-- 短文将动态添加到这里 -->
         </div>
     </div>
     
-    <audio id="audioPlayer"></audio>
-    
+    <footer>
+        <p>© 2023 浪漫短文分享平台 | 让文字与音乐温暖你的心灵</p>
+    </footer>
+
     <script>
-        // DOM元素
-        const audioPlayer = document.getElementById('audioPlayer');
-        const albumArt = document.getElementById('albumArt');
-        const playBtn = document.getElementById('playBtn');
-        const playIcon = document.getElementById('playIcon');
-        const prevBtn = document.getElementById('prevBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const shuffleBtn = document.getElementById('shuffleBtn');
-        const repeatBtn = document.getElementById('repeatBtn');
-        const progressBar = document.getElementById('progressBar');
+        // 创建玫瑰背景
+        function createRoses() {
+            const rosesContainer = document.getElementById('roses');
+            const roseCount = 15; // 玫瑰数量
+            
+            for (let i = 0; i < roseCount; i++) {
+                const rose = document.createElement('div');
+                rose.classList.add('rose');
+                
+                // 随机大小、位置和动画延迟
+                const size = Math.random() * 20 + 30;
+                const left = Math.random() * 100;
+                const animationDelay = Math.random() * 10;
+                const animationDuration = Math.random() * 6 + 12;
+                const hueRotate = Math.random() * 60 - 30; // -30到30度
+                
+                rose.style.width = `${size}px`;
+                rose.style.height = `${size}px`;
+                rose.style.left = `${left}vw`;
+                rose.style.animationDelay = `${animationDelay}s`;
+                rose.style.animationDuration = `${animationDuration}s`;
+                rose.style.filter = `hue-rotate(${hueRotate}deg) drop-shadow(0 0 3px rgba(128, 0, 128, 0.7))`;
+                
+                rosesContainer.appendChild(rose);
+            }
+        }
+        
+        // 音乐播放器功能
+        const playBtn = document.getElementById('play');
         const progress = document.getElementById('progress');
-        const currentTimeEl = document.getElementById('currentTime');
+        const progressContainer = document.getElementById('progress-container');
+        const currentTimeEl = document.getElementById('current-time');
         const durationEl = document.getElementById('duration');
-        const volumeSlider = document.getElementById('volumeSlider');
-        const songTitle = document.getElementById('songTitle');
-        const songArtist = document.getElementById('songArtist');
-        const togglePlaylist = document.getElementById('togglePlaylist');
-        const playlist = document.getElementById('playlist');
-        const closePlaylist = document.getElementById('closePlaylist');
-        const visualizer = document.getElementById('visualizer');
         
-        // 歌曲列表
-        const songs = [
-            {
-                title: '味道',
-                artist: '幻梦乐队',
-                src: 'cddcf-daolang.mp3',
-                cover: 'linear-gradient(45deg, #3498db, #8e44ad)'
-            },
-            {
-                title: '月光小夜曲',
-                artist: '林悦',
-                src: 'https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3',
-                cover: 'linear-gradient(45deg, #f39c12, #d35400)'
-            },
-            {
-                title: '城市脉搏',
-                artist: '电子脉冲',
-                src: 'https://assets.mixkit.co/music/preview/mixkit-driving-ambition-32.mp3',
-                cover: 'linear-gradient(45deg, #9b59b6, #1abc9c)'
-            },
-            {
-                title: '夏日微风',
-                artist: '陈晴',
-                src: 'https://assets.mixkit.co/music/preview/mixkit-happy-times-158.mp3',
-                cover: 'linear-gradient(45deg, #2ecc71, #3498db)'
-            },
-            {
-                title: '深夜咖啡馆',
-                artist: '爵士三重奏',
-                src: 'https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3',
-                cover: 'linear-gradient(45deg, #e74c3c, #f1c40f)'
-            }
-        ];
+        // 创建真实的Audio对象
+        let audio = new Audio();
+        audio.src = 'cddcf-daolang.mp3'; // 示例音频文件
+        audio.preload = 'metadata';
         
-        // 播放器状态
-        let isPlaying = false;
-        let isShuffle = false;
-        let isRepeat = false;
-        let currentSongIndex = 0;
+        // 音频事件监听
+        audio.addEventListener('loadedmetadata', () => {
+            displayTime();
+        });
         
-        // 初始化播放器
-        function initPlayer() {
-            loadSong(currentSongIndex);
-            createVisualizerBars();
-            populatePlaylist();
-            
-            // 设置音量
-            audioPlayer.volume = volumeSlider.value;
-        }
-        
-        // 加载歌曲
-        function loadSong(index) {
-            const song = songs[index];
-            songTitle.textContent = song.title;
-            songArtist.textContent = song.artist;
-            albumArt.style.background = song.cover;
-            audioPlayer.src = song.src;
-            
-            // 更新播放列表活动项
-            updatePlaylistActive();
-        }
-        
-        // 播放歌曲
-        function playSong() {
-            isPlaying = true;
-            playIcon.classList.remove('fa-play');
-            playIcon.classList.add('fa-pause');
-            albumArt.classList.add('play');
-            audioPlayer.play();
-            animateVisualizer();
-        }
-        
-        // 暂停歌曲
-        function pauseSong() {
-            isPlaying = false;
-            playIcon.classList.remove('fa-pause');
-            playIcon.classList.add('fa-play');
-            albumArt.classList.remove('play');
-            audioPlayer.pause();
-            stopVisualizer();
-        }
-        
-        // 上一首
-        function prevSong() {
-            currentSongIndex--;
-            if (currentSongIndex < 0) {
-                currentSongIndex = songs.length - 1;
-            }
-            loadSong(currentSongIndex);
-            if (isPlaying) playSong();
-        }
-        
-        // 下一首
-        function nextSong() {
-            currentSongIndex++;
-            if (currentSongIndex > songs.length - 1) {
-                currentSongIndex = 0;
-            }
-            loadSong(currentSongIndex);
-            if (isPlaying) playSong();
-        }
-        
-        // 更新进度条
-        function updateProgress(e) {
-            const { duration, currentTime } = e.srcElement;
-            if (duration) {
-                // 更新进度条
-                const progressPercent = (currentTime / duration) * 100;
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const progressPercent = (audio.currentTime / audio.duration) * 100;
                 progress.style.width = `${progressPercent}%`;
-                
-                // 更新时间显示
-                const durationMinutes = Math.floor(duration / 60);
-                let durationSeconds = Math.floor(duration % 60);
-                if (durationSeconds < 10) {
-                    durationSeconds = `0${durationSeconds}`;
-                }
-                
-                const currentMinutes = Math.floor(currentTime / 60);
-                let currentSeconds = Math.floor(currentTime % 60);
-                if (currentSeconds < 10) {
-                    currentSeconds = `0${currentSeconds}`;
-                }
-                
-                currentTimeEl.textContent = `${currentMinutes}:${currentSeconds}`;
-                durationEl.textContent = `${durationMinutes}:${durationSeconds}`;
+                displayTime();
             }
-        }
+        });
         
-        // 设置进度
-        function setProgress(e) {
-            const width = this.clientWidth;
-            const clickX = e.offsetX;
-            const duration = audioPlayer.duration;
-            
-            audioPlayer.currentTime = (clickX / width) * duration;
-        }
+        audio.addEventListener('ended', () => {
+            playBtn.innerHTML = '<i class="fas fa-play"></i>';
+            progress.style.width = '0%';
+            audio.currentTime = 0;
+            displayTime();
+        });
         
-        // 切换播放列表显示
-        function togglePlaylistDisplay() {
-            playlist.classList.toggle('show');
-        }
+        audio.addEventListener('error', (e) => {
+            console.log('音频加载失败:', e);
+            // 使用备用音频源
+            audio.src = 'cddcf-daolang.mp3';
+        });
         
-        // 填充播放列表
-        function populatePlaylist() {
-            // 清空现有播放列表
-            while (playlist.children.length > 1) {
-                playlist.removeChild(playlist.lastChild);
-            }
-            
-            // 添加歌曲到播放列表
-            songs.forEach((song, index) => {
-                const playlistItem = document.createElement('div');
-                playlistItem.classList.add('playlist-item');
-                if (index === currentSongIndex) {
-                    playlistItem.classList.add('active');
-                }
-                
-                playlistItem.innerHTML = `
-                    <div style="width: 40px; height: 40px; border-radius: 6px; margin-right: 15px; background: ${song.cover};"></div>
-                    <div class="playlist-details">
-                        <div class="playlist-song">${song.title}</div>
-                        <div class="playlist-artist">${song.artist}</div>
-                    </div>
-                `;
-                
-                playlistItem.addEventListener('click', () => {
-                    currentSongIndex = index;
-                    loadSong(currentSongIndex);
-                    playSong();
-                });
-                
-                playlist.appendChild(playlistItem);
-            });
-        }
-        
-        // 更新播放列表活动项
-        function updatePlaylistActive() {
-            const playlistItems = document.querySelectorAll('.playlist-item');
-            playlistItems.forEach((item, index) => {
-                if (index === currentSongIndex) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-        }
-        
-        // 创建可视化条
-        function createVisualizerBars() {
-            // 清空现有可视化条
-            while (visualizer.firstChild) {
-                visualizer.removeChild(visualizer.firstChild);
-            }
-            
-            // 创建新的可视化条
-            for (let i = 0; i < 20; i++) {
-                const bar = document.createElement('div');
-                bar.classList.add('bar');
-                visualizer.appendChild(bar);
-            }
-        }
-        
-        // 动画可视化效果
-        function animateVisualizer() {
-            const bars = document.querySelectorAll('.bar');
-            bars.forEach(bar => {
-                const randomHeight = Math.floor(Math.random() * 100) + 10;
-                bar.style.height = `${randomHeight}%`;
-            });
-        }
-        
-        // 停止可视化效果
-        function stopVisualizer() {
-            const bars = document.querySelectorAll('.bar');
-            bars.forEach(bar => {
-                bar.style.height = '20%';
-            });
-        }
-        
-        // 事件监听
+        // 播放/暂停
         playBtn.addEventListener('click', () => {
-            isPlaying ? pauseSong() : playSong();
-        });
-        
-        prevBtn.addEventListener('click', prevSong);
-        nextBtn.addEventListener('click', nextSong);
-        
-        shuffleBtn.addEventListener('click', () => {
-            isShuffle = !isShuffle;
-            shuffleBtn.style.color = isShuffle ? '#3498db' : '#e6e6ff';
-        });
-        
-        repeatBtn.addEventListener('click', () => {
-            isRepeat = !isRepeat;
-            repeatBtn.style.color = isRepeat ? '#3498db' : '#e6e6ff';
-        });
-        
-        audioPlayer.addEventListener('timeupdate', updateProgress);
-        audioPlayer.addEventListener('ended', () => {
-            if (isRepeat) {
-                // 单曲循环
-                audioPlayer.currentTime = 0;
-                playSong();
+            if (audio.paused) {
+                audio.play().then(() => {
+                    playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                }).catch(error => {
+                    console.log('播放失败:', error);
+                });
             } else {
-                // 播放下一首
-                nextSong();
+                audio.pause();
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
             }
         });
         
-        progressBar.addEventListener('click', setProgress);
+        // 点击进度条跳转
+        progressContainer.addEventListener('click', (e) => {
+            if (audio.duration) {
+                const width = progressContainer.clientWidth;
+                const clickX = e.offsetX;
+                const percent = clickX / width;
+                audio.currentTime = percent * audio.duration;
+            }
+        });
+
         
-        volumeSlider.addEventListener('input', () => {
-            audioPlayer.volume = volumeSlider.value;
+        // 显示时间
+        function displayTime() {
+            const currentMinutes = Math.floor(audio.currentTime / 60);
+            const currentSeconds = Math.floor(audio.currentTime % 60).toString().padStart(2, '0');
+            const durationMinutes = Math.floor((audio.duration || 0) / 60);
+            const durationSeconds = Math.floor((audio.duration || 0) % 60).toString().padStart(2, '0');
+            
+            currentTimeEl.textContent = `${currentMinutes}:${currentSeconds}`;
+            durationEl.textContent = `${durationMinutes}:${durationSeconds}`;
+        }
+
+        
+        // 短文发布功能
+        const postForm = document.getElementById('post-form');
+        const postsContainer = document.getElementById('posts-container');
+        
+        // 从本地存储加载短文
+        function loadPosts() {
+            const posts = JSON.parse(localStorage.getItem('romanticPosts')) || [];
+            postsContainer.innerHTML = '<h2 style="text-align: center; margin-bottom: 20px; color: #7e22ce;">短文列表</h2>';
+            
+            if (posts.length === 0) {
+                postsContainer.innerHTML += '<p style="text-align: center; color: #7e22ce;">还没有短文，发布一篇吧！</p>';
+                return;
+            }
+            
+            // 按时间倒序排列
+            posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            posts.forEach(post => {
+                const postEl = document.createElement('div');
+                postEl.classList.add('post');
+                postEl.innerHTML = `
+                    <h3>${post.title}</h3>
+                    <p>${post.content}</p>
+                    <p class="post-date">发布于：${new Date(post.date).toLocaleString()}</p>
+                `;
+                postsContainer.appendChild(postEl);
+            });
+        }
+        
+        // 保存短文到本地存储
+        function savePost(title, content) {
+            const posts = JSON.parse(localStorage.getItem('romanticPosts')) || [];
+            const newPost = {
+                title,
+                content,
+                date: new Date().toISOString()
+            };
+            
+            posts.push(newPost);
+            localStorage.setItem('romanticPosts', JSON.stringify(posts));
+            
+            loadPosts(); // 重新加载显示所有短文
+        }
+        
+        // 表单提交处理
+        postForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            
+            if (title && content) {
+                savePost(title, content);
+                
+                // 重置表单
+                postForm.reset();
+                
+                // 显示成功消息
+                alert('短文发布成功！');
+            }
         });
         
-        togglePlaylist.addEventListener('click', togglePlaylistDisplay);
-        closePlaylist.addEventListener('click', togglePlaylistDisplay);
-        
-        // 初始化
-        window.addEventListener('load', initPlayer);
-        
-        // 可视化效果动画
-        setInterval(() => {
-            if (isPlaying) {
-                animateVisualizer();
-            }
-        }, 200);
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            createRoses(); // 创建玫瑰背景
+            loadPosts(); // 加载所有短文
+        });
     </script>
 </body>
 </html>
